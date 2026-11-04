@@ -12,7 +12,7 @@
 
     <groupId>in.virit</groupId>
     <artifactId>passkey-reauthentication</artifactId>
-    <version>0.1.0</version>
+    <version>0.1.1-SNAPSHOT</version>
     <name>Passkey re-authentication for Vaadin</name>
     <description>
         Asks the user to confirm their presence with a passkey (with user verification, e.g. biometrics
@@ -47,7 +47,7 @@
         <url>https://github.com/${github.account}/${github.project}</url>
         <connection>scm:git:git://github.com/${github.account}/${github.project}.git</connection>
         <developerConnection>scm:git:ssh://git@github.com:/${github.account}/${github.project}.git</developerConnection>
-        <tag>passkey-reauthentication-0.1.0</tag>
+        <tag>HEAD</tag>
     </scm>
     <issueManagement>
         <system>GitHub</system>
