@@ -1,0 +1,18 @@
+target/
+.flattened-pom.xml
+
+# Vaadin dev mode scaffolding: created on the first run of the test server and
+# regenerated at will.
+node_modules/
+src/main/frontend/
+package.json
+package-lock.json
+tsconfig.json
+types.d.ts
+vite.config.ts
+vite.generated.ts
+.npmrc
+
+# IDE
+.idea/
+*.iml

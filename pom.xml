@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <!-- Vaadin as provided, Spring Boot for the test server, and the "release"
+             profile for Maven Central (sources, javadocs, signing, central-publishing) -->
+        <groupId>in.virit.sb</groupId>
+        <artifactId>viritin-addon-project-parent</artifactId>
+        <version>0.0.10</version>
+        <relativePath/>
+    </parent>
+
+    <groupId>in.virit</groupId>
+    <artifactId>passkey-reauthentication</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+    <name>Passkey re-authentication for Vaadin</name>
+    <description>
+        Asks the user to confirm their presence with a passkey (with user verification, e.g. biometrics
+        or device PIN) before a sensitive action in a Vaadin application. Independent of the security
+        framework (works e.g. with Spring Security and Quarkus).
+    </description>
+    <url>https://github.com/${github.account}/${github.project}</url>
+    <organization>
+        <name>Vaadin Community</name>
+    </organization>
+    <developers>
+        <developer>
+            <name>Matti Tahvonen</name>
+        </developer>
+        <developer>
+            <name>Claude Code :-)</name>
+        </developer>
+    </developers>
+
+    <properties>
+        <!-- The version used while developing/testing, update every once in a while -->
+        <vaadin.version>25.3.5</vaadin.version>
+        <!-- The oldest version used by the supported stacks (Quarkus 3.40 uses 0.30.x,
+             Spring Security 7.1 uses 0.31.x). The application's own version wins.
+             Test with the newer one: mvn verify -Dwebauthn4j.version=0.31.10.RELEASE -->
+        <webauthn4j.version>0.30.3.RELEASE</webauthn4j.version>
+        <github.account>viritin</github.account>
+        <github.project>passkey-reauthentication</github.project>
+    </properties>
+
+    <scm>
+        <url>https://github.com/${github.account}/${github.project}</url>
+        <connection>scm:git:git://github.com/${github.account}/${github.project}.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com:/${github.account}/${github.project}.git</developerConnection>
+        <tag>HEAD</tag>
+    </scm>
+    <issueManagement>
+        <system>GitHub</system>
+        <url>https://github.com/${github.account}/${github.project}/issues</url>
+    </issueManagement>
+    <licenses>
+        <license>
+            <name>Apache 2</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.webauthn4j</groupId>
+            <artifactId>webauthn4j-core</artifactId>
+            <version>${webauthn4j.version}</version>
+        </dependency>
+
+        <!-- Spring Boot & Vaadin starter come in to test scope via the parent,
+             for the test server (TestServer) -->
+        <dependency>
+            <groupId>org.vaadin.addons</groupId>
+            <artifactId>dramafinder</artifactId>
+            <version>1.2.4</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- The surefire inherited from the super pom predates JUnit 5 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.5.4</version>
+            </plugin>
+            <!-- Browser tests (*IT) against the test server -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <version>3.5.4</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>
