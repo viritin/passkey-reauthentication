@@ -2,11 +2,19 @@
 
 Ask the logged-in user to confirm a sensitive action with a passkey, a.k.a. "step-up authentication" or "sudo mode". User verification is required, so on today's devices this means a fingerprint, face or the device PIN, proving that the same person is still at the keyboard (and not a colleague who found the laptop unlocked). A typical need e.g. in banking apps.
 
+![The confirmation dialog of the add-on near the top of the page, and the passkey prompt of macOS (Touch ID) in Safari in front of it](docs/safari-reauthentication.png)
+
+*The add-on tells what is being confirmed ("Transfer 100 €"), and the operating system asks for the passkey (here Touch ID in Safari on macOS).*
+
 ```java
-reauthentication.runAfterVerification(
+reauthentication.runAfterVerification("Transfer 100 € to Bob",
         () -> bankService.transfer(amount),
         e -> Notification.show("Not confirmed: " + e.getMessage()));
 ```
+
+The browser/OS passkey prompt can't be customized, and it typically talks about "signing in". So this first opens a `ReauthenticationDialog` that tells the user what they are about to confirm. The dialog is placed near the top of the page, so it stays visible while the passkey prompt is open in the middle.
+
+If your own UI already explains the action, `runAfterVerification(action, onFailure)` asks for the passkey right away. `verify()` does the same and returns a `CompletableFuture`.
 
 The whole WebAuthn ceremony happens over Vaadin's own communication:
 
@@ -15,6 +23,27 @@ The whole WebAuthn ceremony happens over Vaadin's own communication:
 - The response is verified with [WebAuthn4J](https://github.com/webauthn4j/webauthn4j) against the stored public key.
 
 No HTTP endpoints, cookies or changes to the login session are involved. So it works the same with any security framework, as long as you can list the passkeys of the current user.
+
+## Localization
+
+The texts of the dialog and the error messages (`ReauthenticationException.getMessage()`) have English defaults.
+
+- **Localize or override them for the whole app:** add the keys to your Vaadin translations, e.g. `src/main/resources/vaadin-i18n/translations_fi.properties`. The keys are listed in `ReauthenticationTexts`.
+
+  ```properties
+  passkey-reauthentication.dialog.hint=Vahvista passkeylläsi. Laitteesi kysyy sormenjälkeä, kasvoja tai PIN-koodia.
+  passkey-reauthentication.dialog.confirm=Vahvista passkeyllä
+  passkey-reauthentication.dialog.cancel=Peruuta
+  passkey-reauthentication.error.no-passkeys=Sinulla ei ole passkeytä, jolla vahvistaa toiminto
+  ```
+
+- **Change the texts of a single dialog:** create the dialog yourself.
+
+  ```java
+  var dialog = new ReauthenticationDialog(reauthentication, "Transfer 100 € to Bob", action, onFailure);
+  dialog.getConfirmButton().setText("Approve transfer");
+  dialog.open();
+  ```
 
 ## Usage
 

@@ -2,6 +2,7 @@ package in.virit.passkeyreauth.it;
 
 import com.microsoft.playwright.Page;
 import org.vaadin.addons.dramafinder.element.ButtonElement;
+import org.vaadin.addons.dramafinder.element.DialogElement;
 import org.vaadin.addons.dramafinder.element.NotificationElement;
 import org.vaadin.addons.dramafinder.element.TextFieldElement;
 
@@ -54,8 +55,46 @@ public class TestAppPage {
         assertThat(page.getByText("Logged in as " + username)).isVisible();
     }
 
+    /**
+     * Clicks the transfer button and confirms in the dialog.
+     */
     public void transfer() {
+        startTransfer().confirm();
+    }
+
+    /**
+     * Clicks the transfer button, which opens the confirmation dialog.
+     */
+    public ConfirmationDialog startTransfer() {
         ButtonElement.getByText(page, "Transfer 100 €").click();
+        return new ConfirmationDialog();
+    }
+
+    public void transferWithoutDialog() {
+        ButtonElement.getByText(page, "Transfer without confirmation dialog").click();
+    }
+
+    public void assertNoErrorNotification() {
+        assertThat(page.locator("vaadin-notification-card[slot]")).hasCount(0);
+    }
+
+    public class ConfirmationDialog {
+        private final DialogElement dialog = new DialogElement(page);
+
+        ConfirmationDialog() {
+            dialog.assertOpen();
+            assertThat(dialog.getLocator().getByText("Transfer 100 €")).isVisible();
+        }
+
+        public void confirm() {
+            ButtonElement.getByText(dialog.getLocator(), "Confirm with passkey").click();
+            dialog.assertClosed();
+        }
+
+        public void cancel() {
+            ButtonElement.getByText(dialog.getLocator(), "Cancel").click();
+            dialog.assertClosed();
+        }
     }
 
     public void assertTransferCount(int expected) {

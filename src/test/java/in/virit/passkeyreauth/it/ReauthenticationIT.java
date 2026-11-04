@@ -24,6 +24,30 @@ public class ReauthenticationIT extends AbstractTestAppIT {
     }
 
     @Test
+    public void actionRunsAfterVerificationWithoutDialog() {
+        VirtualAuthenticator.attachTo(page);
+        var app = app();
+        app.registerWithPasskey("heidi");
+
+        app.transferWithoutDialog();
+        app.assertTransferCount(1);
+    }
+
+    @Test
+    public void cancellingTheDialogDoesNotRunTheAction() {
+        VirtualAuthenticator.attachTo(page);
+        var app = app();
+        app.registerWithPasskey("ivan");
+        long counterBefore = app.signatureCounter();
+
+        app.startTransfer().cancel();
+        app.assertNoErrorNotification();
+        app.assertTransferCount(0);
+        // The passkey was not even asked for
+        assertEquals(counterBefore, app.signatureCounter());
+    }
+
+    @Test
     public void loginWithPasskeyThenConfirmAction() {
         VirtualAuthenticator.attachTo(page);
         var app = app();

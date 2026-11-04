@@ -33,11 +33,16 @@ import java.util.stream.Collectors;
  * same person is still at the keyboard, not e.g. a colleague using a laptop left
  * unlocked.
  * <pre>{@code
- * reauthentication.runAfterVerification(
+ * reauthentication.runAfterVerification("Transfer 100 € to Bob",
  *         () -> bankService.transfer(amount),
  *         e -> Notification.show("Not confirmed: " + e.getMessage()));
  * }</pre>
- * or, if you prefer composing futures, {@link #verify()}.
+ * This first shows a {@link ReauthenticationDialog} telling what the user is
+ * about to confirm, as the passkey prompt of the browser/OS can't be customized
+ * (it typically talks about "signing in"). If you have explained it in your own
+ * UI already, ask for the passkey directly with
+ * {@link #runAfterVerification(Runnable, Consumer)}, or {@link #verify()} if you
+ * prefer composing futures.
  * The whole ceremony happens over Vaadin's own communication: the challenge is
  * kept in server memory, the browser side is one {@code executeJs} call, and the
  * response is verified with WebAuthn4J against the passkeys given by your
@@ -96,8 +101,23 @@ public class PasskeyReauthentication {
     }
 
     /**
+     * Shows a {@link ReauthenticationDialog} with the given description, then asks
+     * the user to confirm with one of their passkeys, and runs the action if that
+     * succeeds. Both callbacks run in the UI thread.
+     *
+     * @param description what the user is about to confirm, e.g. "Transfer 100 € to Bob"
+     * @param action      the sensitive action
+     * @param onFailure   called instead of the action if the user cancelled or could
+     *                    not be verified, see {@link ReauthenticationException#isCancelledByUser()}
+     */
+    public void runAfterVerification(String description, Runnable action,
+                                     Consumer<ReauthenticationException> onFailure) {
+        new ReauthenticationDialog(this, description, action, onFailure).open();
+    }
+
+    /**
      * Asks the user of the current UI to confirm their presence with one of their
-     * passkeys and runs the action if that succeeds. Both callbacks run in the UI
+     * passkeys right away (without a dialog) and runs the action if that succeeds. Both callbacks run in the UI
      * thread. Exceptions thrown by the action go to Vaadin's error handler, like
      * from any other listener.
      *
@@ -136,7 +156,7 @@ public class PasskeyReauthentication {
     private void start(UI ui, Runnable onSuccess, Consumer<ReauthenticationException> onFailure) {
         List<StoredPasskey> passkeys = passkeyStore.passkeysOfCurrentUser();
         if (passkeys.isEmpty()) {
-            onFailure.accept(new ReauthenticationException("You have no passkeys to confirm the action with"));
+            onFailure.accept(new ReauthenticationException(ReauthenticationTexts.NO_PASSKEYS.get()));
             return;
         }
         String rpId = relyingPartyId != null ? relyingPartyId : requestHost();
@@ -159,14 +179,16 @@ public class PasskeyReauthentication {
                         onFailure.accept(e);
                         return;
                     } catch (RuntimeException e) {
-                        onFailure.accept(new ReauthenticationException("Passkey verification failed", e));
+                        onFailure.accept(new ReauthenticationException(
+                                ReauthenticationTexts.VERIFICATION_FAILED.get(), e));
                         return;
                     }
                     onSuccess.run();
                 }, browserError -> onFailure.accept(
                         // Typically NotAllowedError: the user cancelled or the authenticator
                         // could not verify the user
-                        new ReauthenticationException("No passkey confirmation from the browser: " + browserError)));
+                        new ReauthenticationException(ReauthenticationTexts.NOT_CONFIRMED.get(),
+                                new IllegalStateException("Browser: " + browserError))));
     }
 
     private void verifyResponse(String responseJson, List<StoredPasskey> passkeys, ServerProperty serverProperty) {
@@ -174,7 +196,7 @@ public class PasskeyReauthentication {
         StoredPasskey passkey = passkeys.stream()
                 .filter(p -> Arrays.equals(p.credentialId(), response.getCredentialId()))
                 .findFirst()
-                .orElseThrow(() -> new ReauthenticationException("The passkey does not belong to the current user"));
+                .orElseThrow(() -> new ReauthenticationException(ReauthenticationTexts.FOREIGN_PASSKEY.get()));
 
         CredentialRecord credentialRecord = new CredentialRecordImpl(null, null, null, null,
                 passkey.signatureCount(),
